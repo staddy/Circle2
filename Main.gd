@@ -26,12 +26,16 @@ enum Directions{None = 0, Up = 1, Right = 2, Down = 3, Left = 4};
 var SIZE = 30;
 var BLOCK = 20;
 
+var SAVE_PATH = "user://save.cfg"
+
 var wins = 0;
 var losses = 0;
 
 var turns = 0.5;
 var pathLength = 0.5;
 var blocks = 0.5;
+var currentLevel: = 1;
+var fails: = 0;
 
 var showTrace = false;
 var trace = [];
@@ -46,6 +50,10 @@ var aimDirection;
 var lastDirection;
 
 var pressed_position = Vector2.ZERO
+var pressed: = false
+
+onready var menu = $CanvasLayer/Menu
+onready var about = $CanvasLayer/PanelAbout
 
 func getBlock(x:int, y:int):
 	if (inBounds(x, y)):
@@ -121,14 +129,36 @@ func fillDirection(direction:int):
 			fillDirection(direction);
 
 func _ready():
+	var config = ConfigFile.new()
+	var err = config.load(SAVE_PATH)
+	if err == OK:
+		currentLevel = config.get_value("game", "level", 1)
+		turns = config.get_value("game", "turns", 0.5)
+		blocks = config.get_value("game", "blocks", 0.5)
+		fails = config.get_value("game", "fails", 0)
+	updateUI()
 	resetLevel();
+
+func saveProgress():
+	var config = ConfigFile.new()
+	config.set_value("game", "level", currentLevel)
+	config.set_value("game", "turns", turns)
+	config.set_value("game", "blocks", blocks)
+	config.set_value("game", "fails", fails)
+	config.save(SAVE_PATH)
+
+func updateUI():
+	$CanvasLayer/LabelLevel.text = "Level: %d" % currentLevel
+	$CanvasLayer/LabelIQ.text = "IQ: %d" % max(0, currentLevel * 5 - fails)
 
 func inBounds(x:int, y:int):
 	if (x >= 0 and x < SIZE and y >= 0 and y < SIZE):
 		return true;
-	return false
+	return false;
 
 func resetLevel():
+	updateUI()
+	seed(currentLevel)
 	trace = [];
 	if gameScene != null:
 		remove_child(gameScene);
@@ -211,9 +241,13 @@ func resetLevel():
 
 func _unhandled_input(event):
 	if event is InputEventMouseButton or event is InputEventScreenTouch:
+		if menu.visible or about.visible:
+			return
 		if event.is_pressed():
 			pressed_position = event.position
-		else :
+			pressed = true
+		elif pressed:
+			pressed = false
 			var sv = event.position - pressed_position
 			if sv.length() > 20:
 				var m = 0
@@ -241,19 +275,25 @@ func release_event(e):
 	ev.pressed = false
 	Input.parse_input_event(ev)
 
-func _physics_process(delta):
+func reset():
+	pressed = false
+	fails += 1
+	ball.ballDirection = Directions.None;
+	ball.levelX = startX;
+	ball.levelY = startY;
+	saveProgress()
+	updateUI();
+
+func _physics_process(_delta):
+	if menu.visible or about.visible:
+		return
 	if (Input.is_action_just_pressed("trace")):
 		showTrace = not showTrace;
 		for i in range(trace.size()):
 			trace[i].visible = showTrace;
 	
 	if (Input.is_action_just_pressed("reset")):
-		
-		ball.ballDirection = Directions.None;
-		
-		
-		ball.levelX = startX;
-		ball.levelY = startY;
+		reset()
 	
 	if (Input.is_action_just_pressed("new")):
 		ball.visible = false;
@@ -318,18 +358,49 @@ func _physics_process(delta):
 			ball.ballDirection = Directions.None;
 			
 			if (turns < 0.999):
-				turns = turns + (1 - turns) / 2;
+				turns = turns + (1 - turns) / 3;
 			
 			
 			if (blocks < 0.995):
-				blocks = blocks + (1 - blocks) / 2;
+				blocks = blocks + (1 - blocks) / 3;
+			currentLevel += 1
+			saveProgress()
 			resetLevel();
 		
 	else :
-		
-		ball.ballDirection = Directions.None;
-		
-		
-		ball.levelX = startX;
-		ball.levelY = startY;
-	
+		reset()
+
+
+
+func _on_Reset_pressed() -> void:
+	if menu.visible or about.visible:
+		return
+	reset()
+
+
+func _on_LabelAbout_meta_clicked(meta) -> void:
+	OS.shell_open(meta)
+
+
+func _on_Back_pressed() -> void:
+	about.hide()
+	menu.show()
+
+
+func _on_Resume_pressed() -> void:
+	about.hide()
+	menu.hide()
+
+
+func _on_About_pressed() -> void:
+	about.show()
+	menu.hide()
+
+
+func _on_Exit_pressed() -> void:
+	get_tree().quit()
+
+
+func _on_ShowMenu_pressed() -> void:
+	about.hide()
+	menu.show()
