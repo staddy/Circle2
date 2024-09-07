@@ -52,8 +52,8 @@ var lastDirection;
 var pressed_position = Vector2.ZERO
 var pressed: = false
 
-onready var menu = $CanvasLayer/Menu
-onready var about = $CanvasLayer/PanelAbout
+@onready var menu = $CanvasLayer/Menu
+@onready var about = $CanvasLayer/PanelAbout
 
 func getBlock(x:int, y:int):
 	if (inBounds(x, y)):
@@ -167,7 +167,7 @@ func resetLevel():
 	gameScene.position.x = BLOCK / 2;
 	gameScene.position.y = BLOCK / 2;
 
-	ball = Ball.instance();
+	ball = Ball.instantiate();
 	ball.ballDirection = Directions.None;
 
 	level = [];
@@ -215,19 +215,19 @@ func resetLevel():
 	for i in range(level.size()):
 		for j in range(level[i].size()):
 			if (level[i][j] == 1):
-				var s = Block.instance();
+				var s = Block.instantiate();
 				gameScene.add_child(s);
 				s.position.x = i * BLOCK;
 				s.position.y = j * BLOCK;
 			elif (level[i][j] == 2):
-				var s = Trace.instance();
+				var s = Trace.instantiate();
 				gameScene.add_child(s);
 				s.position.x = i * BLOCK;
 				s.position.y = j * BLOCK;
 				s.visible = showTrace;
 				trace.push_back(s);
 			elif (level[i][j] == 3):
-				var s = Arrow.instance();
+				var s = Arrow.instantiate();
 				
 				
 				s.rotation = PI / 2 * (aimDirection - 1);
@@ -266,12 +266,14 @@ func _unhandled_input(event):
 					e = "right"
 				var ev = InputEventAction.new()
 				ev.action = e
+				#ev.button_pressed = true
 				ev.pressed = true
 				Input.parse_input_event(ev)
 
 func release_event(e):
 	var ev = InputEventAction.new()
 	ev.action = e
+	#ev.button_pressed = false
 	ev.pressed = false
 	Input.parse_input_event(ev)
 

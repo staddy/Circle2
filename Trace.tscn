@@ -1,9 +1,9 @@
 [gd_scene load_steps=2 format=2]
 
-[ext_resource path="res://trace.png" type="Texture" id=1]
+[ext_resource path="res://trace.png" type="Texture2D" id=1]
 
 [node name="Trace" type="Node2D"]
 
-[node name="trace" type="Sprite" parent="."]
+[node name="trace" type="Sprite2D" parent="."]
 scale = Vector2( 2, 2 )
 texture = ExtResource( 1 )
